@@ -21,11 +21,25 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+=head1 ATTRIBUTES
+
+=head2 username
+
+REQUIRED - desk.com username
+
+=cut
+
 has 'username' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1
 );
+
+=head2 password
+
+REQUIRED - desk.com password
+
+=cut
 
 has 'password' => (
     is       => 'ro',

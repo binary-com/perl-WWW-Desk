@@ -1,17 +1,16 @@
-package WWW::Desk::Browser;
+package WWW::Desk::Auth::oAuth;
 
 use 5.006;
 use strict;
-use warnings FATAL => 'all';
+use warnings;
 
 use Moose;
-use LWP::UserAgent;
-use URI;
-use JSON;
+use Net::OAuth::Simple;
+use Data::Dumper;
 
 =head1 NAME
 
-WWW::Desk::Browser - Desk.com Browser Client
+WWW::Desk::Auth::oAuth - Desk.com oAuth Authentication
 
 =head1 VERSION
 
@@ -23,89 +22,153 @@ our $VERSION = '0.01';
 
 =head1 ATTRIBUTES
 
-=head2 base_url
+=head2 api_key
 
-REQUIRED - your desk url
+REQUIRED - desk.com api key
 
 =cut
 
-has 'base_url' => (
+has 'api_key' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1
 );
 
-has 'browser' => (
-    is      => 'ro',
-    isa     => 'LWP::UserAgent',
-    lazy    => 1,
-    default => sub {
-        my ($self) = @_;
-        my $browser = LWP::UserAgent->new;
-        $browser->cookie_jar( {} );
-        return $browser;
-    }
+=head2 secret_key
+
+REQUIRED - desk.com api secret key
+
+=cut
+
+has 'secret_key' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1
 );
 
-has 'json' => (
-    is => 'ro',
-    isa => 'JSON',
-    lazy => 1,
-    default => sub {
-        my ( $self ) = @_;
-        return JSON->new();
-    }
+=head2 desk_url
+
+REQUIRED - your desk url
+
+=cut
+
+has 'desk_url' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
 );
+
+=head2 callback_url
+
+REQUIRED - desk.com oauth callback url
+
+=cut
+
+has 'callback_url' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
+
+=head2 auth_client
+
+Net::OAuth::Simple OAuth protocol object wrapper
+
+=cut
+
+has 'auth_client' => (
+    is         => 'ro',
+    isa        => 'Net::OAuth::Simple',
+    lazy_build => 1
+);
+
+sub _build_auth_client {
+    my ( $self ) = @_;
+    my $desk_url = $self->desk_url;
+    my $callback_url = $self->callback_url;
+
+    if ( $desk_url=~/\/$/ ) {
+        $desk_url =~s/\/$//ig;
+    }
+    return Net::OAuth::Simple->new(
+        tokens => {
+            consumer_key    => $self->api_key,
+            consumer_secret => $self->secret_key,
+        },
+        protocol_version => '1.0a',
+        urls => {
+            authorization_url => "$desk_url/oauth/authorize",
+            request_token_url => "$desk_url/oauth/request_token",
+            access_token_url  => "$desk_url/oauth/access_token"
+        }
+    );
+}
 
 =head1 SYNOPSIS
 
-    use WWW::Desk::Browser;
+    use WWW::Desk::Auth::oAuth;
 
-    my $browser_client = WWW::Desk::Browser->new();
+    my $auth = WWW::Desk::Auth::oAuth->new(
+        'api_key'      => 'api key',
+        'secret_key'   => 'secret key',
+        'desk_url'     => 'https://my.desk.com',
+        'callback_url' => 'https://myapp.com/callback'
+    );
+
+    if ( $auth->is_authorize ){
+        // make restricted content request
+    }
+    else {
+        print "Please visit this url to authorize ". $auth->authorization_url;
+    }
+
 
 =head1 SUBROUTINES/METHODS
 
-=head2 prepare_url
+=head2 is_authorized
 
-Utility method to build base url and fragment
-
-=cut
-
-sub prepare_url {
-    my ( $self, $fragment ) = @_;
-    my $base_url = $self->base_url;
-    my $api_version = $base_url=~/\/$/ ? 'api/v2/' : '/api/v2/';
-    if ( $fragment=~/^\// ) {
-        $fragment=~s/^\///ig;
-    }
-    return "$base_url$api_version$fragment";
-}
-
-=head2 prepare_uri_as_string
-
-Utility method to build url with query parameters
+Whether the client has the necessary credentials to be authorized. Authorization url can be used to get the authentication 
 
 =cut
 
-sub prepare_uri_as_string {
-    my ( $self, $url, $params ) = @_;
-    my $uri = URI->new($url);
-    if ( $params ) {
-        $uri->query_form( ref($params) eq "HASH" ? %$params : @$params );
-    }
-    return $uri->as_string;
+sub is_authorized {
+    my ( $self ) = @_;
+    return $self->auth_client->authorized;
 }
 
-=head2 json_response
+=head2 authorization_url
 
-Utility method to get response as JSON format
+Authorization url the user needs to visit to authorize 
 
 =cut
 
-sub json_response {
-    my ( $self, $response ) = @_;
-    return $self->json->decode( $response );
+sub authorization_url {
+    my ( $self ) = @_;
+    return $self->auth_client->get_authorization_url( callback => $self->callback_url )->as_string;
 }
+
+=head2 request_token
+
+Returns the current request token. 
+
+=cut
+
+sub request_token {
+    my ( $self ) = @_;
+    return $self->auth_client->request_token;
+}
+
+=head2 request_token_secret
+
+Returns the current request token secret. 
+
+=cut
+
+sub request_token_secret {
+    my ( $self ) = @_;
+    return $self->auth_client->request_token_secret;
+}
+
 
 =head1 AUTHOR
 
@@ -196,4 +259,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 no Moose;
 __PACKAGE__->meta->make_immutable();
 
-1; # End of WWW::Desk
+1; # End of WWW::Desk::Auth::oAuth
