@@ -176,4 +176,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 no Moose;
 __PACKAGE__->meta->make_immutable();
 
-1; # End of WWW::Desk
+1; # End of WWW::Desk::Auth::HTTP

@@ -104,7 +104,7 @@ Utility method to get response as JSON format
 
 sub json_response {
     my ( $self, $response ) = @_;
-    return $self->json->decode( $response );
+    return $self->json->encode( $response );
 }
 
 =head1 AUTHOR

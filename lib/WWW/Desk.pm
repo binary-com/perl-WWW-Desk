@@ -5,13 +5,14 @@ use strict;
 use warnings FATAL => 'all';
 
 use Moose;
+use Carp;
 use HTTP::Request;
 use WWW::Desk::Browser;
 use Data::Dumper;
 
 =head1 NAME
 
-WWW::Desk - The great new WWW::Desk!
+WWW::Desk - Desk.com perl API
 
 =head1 VERSION
 
@@ -23,23 +24,34 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
+WWW::Desk will allow you make all API calls using HTTP or oAuth authentication
 
     use WWW::Desk;
+    use WWW::Desk::Auth::HTTP;
 
-    my $foo = WWW::Desk->new();
+    my $auth = WWW::Desk::Auth::HTTP->new(
+        'username' => 'desk username',
+        'password' => 'desk password'
+    );
+    my $desk = WWW::Desk->new(
+        'desk_url'       => 'https://your.desk.com/',
+        'authentication' => $auth,
+    );
+    my $response = $desk->call('/cases','GET', {'locale' => 'en_US'} );
+
     ...
-
-=head1 EXPORT
-
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-has 'base_url' => (
+=head1 ATTRIBUTES
+
+=head2 desk_url
+
+REQUIRED - your desk url
+
+=cut
+
+has 'desk_url' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1
@@ -54,38 +66,93 @@ has 'browser_client' => (
 sub _build_browser_client {
     my ( $self ) = @_;
     return WWW::Desk::Browser->new(
-        base_url => $self->base_url
+        base_url => $self->desk_url
     );
 }
 
+=head2 authentication
+
+REQUIRED - WWW::Desk::Auth::HTTP or WWW::Desk::Auth::oAuth object
+
+=cut
+
 has 'authentication' => (
     is       => 'ro',
-    isa      => 'WWW::Desk::Auth::HTTP',
+    isa      => 'Object',
     required => 1
 );
 
 =head1 SUBROUTINES/METHODS
 
-=head2 list
+=head2 call
+
+call method will allow you to make API calls.
+url fragment, http method are required to make call
+
+you can also pass params next to http method to add additional paramerters to the url
 
 =cut
 
-sub list {
-    my ( $self ) = @_;
+sub call {
+    my ( $self, $url_fragment, $http_method, $params ) = @_;
+
+    if ( not defined $params ) {
+        $params = {
+            't' => time()
+        };
+    }
+
+    return $self->_prepare_response(
+        "Argument must be supplied as HASH"
+    ) unless ref $params eq 'HASH';
+
+    return $self->_prepare_response(
+        "Invalid HTTP method. Only supported GET, POST, PATCH, DELETE"
+    ) unless $http_method=~/^GET$|^POST$|^PATCH$|^DELETE$/i;
+
     my $browser_client = $self->browser_client;
-    my $request_url    = $browser_client->prepare_url('/cases');
-    my $request_       = HTTP::Request->new(
-        'GET', $browser_client->prepare_uri_as_string(
-            $request_url, []
-        ), $self->authentication->login_headers
-    );
-    my $response = $browser_client->browser->request($request_);
-    return $response->status_line if $response->is_error;
-    return $browser_client->json_response(
+    my $request_url    = $browser_client->prepare_url($url_fragment);
+
+    my $response;
+
+    my $authentication = $self->authentication;
+    if ( ref($authentication) eq 'WWW::Desk::Auth::HTTP' ) {
+        my $request_ = HTTP::Request->new(
+            $http_method, $browser_client->prepare_uri_as_string(
+                $request_url, $params
+            ), $self->authentication->login_headers
+        );
+        $response = $browser_client->browser->request($request_);
+    }
+    elsif ( ref($authentication) eq 'WWW::Desk::Auth::oAuth' ) {
+        $response = $authentication->auth_client->view_restricted_resource(
+            $request_url, $http_method, $params
+        );
+    }
+    else {
+        return $self->_prepare_response(
+            "Authentication not supported"
+        );
+    }
+
+    return $self->_prepare_response(
+        $response->status_line
+    ) if $response->is_error;
+
+    return $self->_prepare_response(
+        $response->status_line,
         $response->decoded_content
     ) if $response->is_success;
 }
 
+sub _prepare_response {
+    my ( $self, $msg, $data ) = @_;
+    $data = $self->browser_client->json->decode($data) if $data;
+    return {
+        'msg'  => $msg,
+        'data' => $data
+    };
+}
 
 =head1 AUTHOR
 
