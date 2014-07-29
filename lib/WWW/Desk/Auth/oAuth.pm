@@ -6,7 +6,6 @@ use warnings;
 
 use Moose;
 use Net::OAuth::Simple;
-use Data::Dumper;
 
 =head1 NAME
 

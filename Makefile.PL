@@ -16,11 +16,28 @@ WriteMakefile(
     },
     BUILD_REQUIRES => {
         'Test::More' => 0,
+        'Test::Exception' => 0,
     },
     PREREQ_PM => {
-        #'ABC'              => 1.6,
-        #'Foo::Bar::Module' => 5.0401,
+        'Moose' => 0,
+        'LWP::UserAgent' => 0,
+        'URI' => 0,
+        'JSON' => 0,
+        'HTTP::Request' => 0,
+        'Carp' => 0,
+        'Net::OAuth::Simple' => 0,
+        'MIME::Base64' => 0,
+        'HTTP::Headers' => 0
     },
+    (! eval { ExtUtils::MakeMaker->VERSION(6.46) } ? () :
+        (META_ADD => {
+            resources => {
+                homepage   => 'https://github.com/binary-com/perl-WWW-Desk',
+                repository => 'git@github.com:binary-com/perl-WWW-Desk.git',
+                bugtracker => 'http://rt.cpan.org/NoAuth/Bugs.html?Dist=WWW-Desk',
+            },
+        })
+    ),
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => 'WWW-Desk-*' },
 );

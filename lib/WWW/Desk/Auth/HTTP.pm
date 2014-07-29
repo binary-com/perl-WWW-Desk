@@ -7,7 +7,6 @@ use warnings FATAL => 'all';
 use Moose;
 use MIME::Base64;
 use HTTP::Headers;
-use Data::Dumper;
 
 =head1 NAME
 

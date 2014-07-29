@@ -8,7 +8,6 @@ use Moose;
 use Carp;
 use HTTP::Request;
 use WWW::Desk::Browser;
-use Data::Dumper;
 
 =head1 NAME
 
@@ -39,9 +38,20 @@ WWW::Desk will allow you make all API calls using HTTP or oAuth authentication
     );
     my $response = $desk->call('/cases','GET', {'locale' => 'en_US'} );
 
-    ...
-
 =cut
+
+=head1 METHOD
+
+    sub call {
+        my ( $self, $url_fragment, $http_method, $params ) = @_;
+        ...
+    }
+
+    Call method accepts
+        $url_fragment - API fragment url
+        $http_method  - HTTP method, Only supported GET, POST, PATCH, DELETE
+        $params       - Additional Parameters which you want to send as query parameters
+
 
 =head1 ATTRIBUTES
 
