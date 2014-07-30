@@ -6,7 +6,7 @@ use warnings FATAL => 'all';
 
 use Moose;
 use MIME::Base64;
-use HTTP::Headers;
+use Mojo::Headers;
 
 =head1 NAME
 
@@ -48,11 +48,11 @@ has 'password' => (
 
 has 'http_header' => (
     is      => 'ro',
-    isa     => 'HTTP::Headers',
+    isa     => 'Mojo::Headers',
     lazy    => 1,
     default => sub {
         my ($self) = @_;
-        my $http_header = HTTP::Headers->new;
+        my $http_header = Mojo::Headers->new;
         return $http_header;
     }
 );
@@ -71,18 +71,17 @@ has 'http_header' => (
 
 =head2 login_headers
 
-Return HTTP::Headers for basic http authentication
+Return Mojo::Headers for basic http authentication
 
 =cut
 
 sub login_headers {
     my ($self) = @_;
     my $http = $self->http_header;
-    $http->header('Accept' => 'application/json');
-    $http->header('Content-type' => 'application/json');
-    $http->header(
-        'Authorization' => 'Basic ' . encode_base64($self->username . ':' . $self->password, '')
-    );
+    $http->accept('application/json');
+    $http->content_type('application/json');
+    $http->add( 'Authorization' => 'Basic '
+          . encode_base64( $self->username . ':' . $self->password, '' ) );
     return $http;
 }
 
@@ -175,4 +174,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 no Moose;
 __PACKAGE__->meta->make_immutable();
 
-1; # End of WWW::Desk::Auth::HTTP
+1;    # End of WWW::Desk::Auth::HTTP

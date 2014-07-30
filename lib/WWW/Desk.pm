@@ -6,7 +6,6 @@ use warnings FATAL => 'all';
 
 use Moose;
 use Carp;
-use HTTP::Request;
 use WWW::Desk::Browser;
 
 =head1 NAME
@@ -74,10 +73,8 @@ has 'browser_client' => (
 );
 
 sub _build_browser_client {
-    my ( $self ) = @_;
-    return WWW::Desk::Browser->new(
-        base_url => $self->desk_url
-    );
+    my ($self) = @_;
+    return WWW::Desk::Browser->new( base_url => $self->desk_url );
 }
 
 =head2 authentication
@@ -107,19 +104,18 @@ sub call {
     my ( $self, $url_fragment, $http_method, $params ) = @_;
 
     if ( not defined $params ) {
-        $params = {
-            't' => time()
-        };
+        $params = { 't' => time() };
     }
 
-    return $self->_prepare_response(
-        "Argument must be supplied as HASH"
-    ) unless ref $params eq 'HASH';
+    return $self->_prepare_response( "400",
+        "Argument must be supplied as HASH" )
+      unless ref $params eq 'HASH';
 
-    return $self->_prepare_response(
-        "Invalid HTTP method. Only supported GET, POST, PATCH, DELETE"
-    ) unless $http_method=~/^GET$|^POST$|^PATCH$|^DELETE$/i;
+    return $self->_prepare_response( "400",
+        "Invalid HTTP method. Only supported GET, POST, PATCH, DELETE" )
+      unless $http_method =~ /^GET$|^POST$|^PATCH$|^DELETE$/i;
 
+    $http_method = lc $http_method;
     my $browser_client = $self->browser_client;
     my $request_url    = $browser_client->prepare_url($url_fragment);
 
@@ -127,40 +123,39 @@ sub call {
 
     my $authentication = $self->authentication;
     if ( ref($authentication) eq 'WWW::Desk::Auth::HTTP' ) {
-        my $request_ = HTTP::Request->new(
-            $http_method, $browser_client->prepare_uri_as_string(
-                $request_url, $params
-            ), $self->authentication->login_headers
-        );
-        $response = $browser_client->browser->request($request_);
+
+        my $json_params =
+          $params ? $browser_client->js_encode($params) : $params;
+        my $http_headers = $self->authentication->login_headers->to_hash();
+        $response =
+          $browser_client->browser->$http_method(
+            $request_url => $http_headers => $json_params );
     }
     elsif ( ref($authentication) eq 'WWW::Desk::Auth::oAuth' ) {
-        $response = $authentication->auth_client->view_restricted_resource(
-            $request_url, $http_method, $params
-        );
+        $response =
+          $authentication->auth_client->view_restricted_resource( $request_url,
+            $http_method, $params );
     }
     else {
-        return $self->_prepare_response(
-            "Authentication not supported"
-        );
+        return $self->_prepare_response( "501",
+            "Authentication Not Implemented" );
     }
+    my $error = $response->error;
+    return $self->_prepare_response( $error->{'code'} || 408,
+        $error->{'message'} )
+      if $error;
 
-    return $self->_prepare_response(
-        $response->status_line
-    ) if $response->is_error;
-
-    return $self->_prepare_response(
-        $response->status_line,
-        $response->decoded_content
-    ) if $response->is_success;
+    return $self->_prepare_response( $error->{'code'} || 200,
+        $error->{'message'}, $response->res->body );
 }
 
 sub _prepare_response {
-    my ( $self, $msg, $data ) = @_;
+    my ( $self, $code, $msg, $data ) = @_;
     $data = $self->browser_client->json->decode($data) if $data;
     return {
-        'msg'  => $msg,
-        'data' => $data
+        'code'    => $code,
+        'message' => $msg,
+        'data'    => $data
     };
 }
 
@@ -256,4 +251,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 no Moose;
 __PACKAGE__->meta->make_immutable();
 
-1; # End of WWW::Desk
+1;    # End of WWW::Desk

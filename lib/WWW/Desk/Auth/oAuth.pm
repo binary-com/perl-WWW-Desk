@@ -6,6 +6,7 @@ use warnings;
 
 use Moose;
 use Net::OAuth::Simple;
+use Mojo::URL;
 
 =head1 NAME
 
@@ -82,25 +83,24 @@ has 'auth_client' => (
 );
 
 sub _build_auth_client {
-    my ( $self ) = @_;
-    my $desk_url = $self->desk_url;
-    my $callback_url = $self->callback_url;
-
-    if ( $desk_url=~/\/$/ ) {
-        $desk_url =~s/\/$//ig;
-    }
+    my ($self) = @_;
     return Net::OAuth::Simple->new(
         tokens => {
             consumer_key    => $self->api_key,
             consumer_secret => $self->secret_key,
         },
         protocol_version => '1.0a',
-        urls => {
-            authorization_url => "$desk_url/oauth/authorize",
-            request_token_url => "$desk_url/oauth/request_token",
-            access_token_url  => "$desk_url/oauth/access_token"
+        urls             => {
+            authorization_url => $self->_prepare_url('/oauth/authorize'),
+            request_token_url => $self->_prepare_url('/oauth/request_token'),
+            access_token_url  => $self->_prepare_url('/oauth/access_token')
         }
     );
+}
+
+sub _prepare_url {
+    my ( $self, $path ) = @_;
+    return Mojo::URL->new( $self->desk_url )->path($path)->to_abs();
 }
 
 =head1 SYNOPSIS
@@ -131,7 +131,7 @@ Whether the client has the necessary credentials to be authorized. Authorization
 =cut
 
 sub is_authorized {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->auth_client->authorized;
 }
 
@@ -142,8 +142,9 @@ Authorization url the user needs to visit to authorize
 =cut
 
 sub authorization_url {
-    my ( $self ) = @_;
-    return $self->auth_client->get_authorization_url( callback => $self->callback_url )->as_string;
+    my ($self) = @_;
+    return $self->auth_client->get_authorization_url(
+        callback => $self->callback_url )->as_string;
 }
 
 =head2 request_token
@@ -153,7 +154,7 @@ Returns the current request token.
 =cut
 
 sub request_token {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->auth_client->request_token;
 }
 
@@ -164,10 +165,9 @@ Returns the current request token secret.
 =cut
 
 sub request_token_secret {
-    my ( $self ) = @_;
+    my ($self) = @_;
     return $self->auth_client->request_token_secret;
 }
-
 
 =head1 AUTHOR
 
@@ -258,4 +258,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 no Moose;
 __PACKAGE__->meta->make_immutable();
 
-1; # End of WWW::Desk::Auth::oAuth
+1;    # End of WWW::Desk::Auth::oAuth
