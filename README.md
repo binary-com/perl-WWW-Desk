@@ -7,6 +7,7 @@ http://dev.desk.com/API/using-the-api/#general
 Desk.com currently support Basic HTTP Authentication and OAuth 1.0a authentication.
 WWW::Desk::Auth::oAuth and WWW::Desk::Auth::HTTP will handle authentication
 
+Demo oAuth application at demo/oAuth_demo.pl
 
 SYNOPSIS
 
