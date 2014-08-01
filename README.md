@@ -2,6 +2,8 @@ WWW-Desk
 
 Perl Client to make Desk.com API calls.
 
+[![Build Status](https://travis-ci.org/binary-com/perl-WWW-Desk.svg)](https://travis-ci.org/binary-com/perl-WWW-Desk)
+
 http://dev.desk.com/API/using-the-api/#general
 
 Desk.com currently support Basic HTTP Authentication and OAuth 1.0a authentication.
