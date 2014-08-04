@@ -54,20 +54,27 @@ subtest "WWW::Desk::Browser object attribute require test" => sub {
 };
 
 subtest "WWW::Desk::Browser method test" => sub {
-    plan tests => 3;
+    plan tests => 7;
 
     my $desk = WWW::Desk::Auth::oAuth->new(
         desk_url => 'https://test.desk.com',
         callback_url => URI->new('http://google.com'),
         api_key => 'API KEY',
-        secret_key => 'API SECRET'
+        secret_key => 'API SECRET',
+        debug => 1
     );
 
     can_ok($desk, ('authorization_url','request_access_token'));
     isa_ok($desk->auth_client, 'Net::OAuth::Client');
+    is ( $desk->debug, 1, 'Debug initilized');
+    is ( $desk->api_version, 'v2', 'API Version');
 
     throws_ok { $desk->authorization_url }
     qr/Unable to get/, "Unable to get authorization_url";
+
+    is ($desk->build_api_url('/wow'), 'https://test.desk.com/api/v2/wow', 'Prepare URL works');
+
+    is ($desk->build_api_url('wow'), 'https://test.desk.com/api/v2/wow', 'Prepare URL ');
 
 };
 
