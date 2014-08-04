@@ -60,7 +60,7 @@ subtest "WWW::Desk validate authentication module" => sub {
 };
 
 subtest "WWW::Desk validate http method" => sub {
-    plan tests => 1;
+    plan tests => 3;
 
     my $auth = WWW::Desk::Auth::HTTP->new(
         'username' => 'username',
@@ -70,6 +70,10 @@ subtest "WWW::Desk validate http method" => sub {
         authentication => $auth,
         desk_url       => 'https://test.desk.com'
     );
+
+    isa_ok($desk->browser_client, 'WWW::Desk::Browser');
+    isa_ok($desk->authentication, 'WWW::Desk::Auth::HTTP');
+
     is(
         $desk->call( '/hello', 'GETE' )->{'message'},
         'Invalid HTTP method. Only supported GET, POST, PATCH, DELETE',
