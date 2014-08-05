@@ -54,7 +54,7 @@ subtest "WWW::Desk::Browser object attribute require test" => sub {
 };
 
 subtest "WWW::Desk::Browser method test" => sub {
-    plan tests => 7;
+    plan tests => 9;
 
     my $desk = WWW::Desk::Auth::oAuth->new(
         desk_url => 'https://test.desk.com',
@@ -75,6 +75,13 @@ subtest "WWW::Desk::Browser method test" => sub {
     is ($desk->build_api_url('/wow'), 'https://test.desk.com/api/v2/wow', 'Prepare URL works');
 
     is ($desk->build_api_url('wow'), 'https://test.desk.com/api/v2/wow', 'Prepare URL ');
+
+    my %data = $desk->_session(1,2);
+    is( ref \%data ,'HASH','internal session' );
+
+    throws_ok { $desk->request_access_token('sdd','dfd') }
+    qr/Missing required parameter/, "Unable to get 'token_secret'";
+
 
 };
 
