@@ -143,6 +143,10 @@ sub call {
             "Authentication Not Implemented" );
     }
     my $error = $response->error;
+    if ( ref $error ne 'HASH' ) {
+        return $self->_prepare_response( 404,
+            $error )
+    }
     return $self->_prepare_response( $error->{'code'} || 408,
         $error->{'message'} )
       if $error;
