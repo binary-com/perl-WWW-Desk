@@ -3,8 +3,8 @@ WWW-Desk
 Perl Client to make Desk.com API calls.
 
 [![Build Status](https://travis-ci.org/binary-com/perl-WWW-Desk.svg)](https://travis-ci.org/binary-com/perl-WWW-Desk)
-
 [![Coverage Status](https://coveralls.io/repos/binary-com/perl-WWW-Desk/badge.png)](https://coveralls.io/r/binary-com/perl-WWW-Desk)
+[![Gitter chat](https://badges.gitter.im/binary-com/perl-WWW-Desk.png)](https://gitter.im/binary-com/perl-WWW-Desk)
 
 http://dev.desk.com/API/using-the-api/#general
 
