@@ -158,7 +158,7 @@ sub call {
 
 sub _prepare_response {
     my ( $self, $code, $msg, $data ) = @_;
-    $data = $self->browser_client->json->decode($data) if $data;
+    $data = $self->browser_client->js_decode($data) if $data;
     return {
         'code'    => $code,
         'message' => $msg,

@@ -56,16 +56,6 @@ has 'browser' => (
     }
 );
 
-has 'json' => (
-    is      => 'ro',
-    isa     => 'Mojo::JSON',
-    lazy    => 1,
-    default => sub {
-        my ($self) = @_;
-        return Mojo::JSON->new();
-    }
-);
-
 =head1 SYNOPSIS
 
     use WWW::Desk::Browser;
@@ -99,7 +89,18 @@ Utility method to encode as JSON format
 
 sub js_encode {
     my ( $self, $response ) = @_;
-    return $self->json->encode($response);
+    return Mojo::JSON::encode_json($response);
+}
+
+=head2 js_decode
+
+Utility method to decode from JSON
+
+=cut
+
+sub js_decode {
+    my ( $self, $data ) = @_;
+    return Mojo::JSON::decode_json($data);
 }
 
 =head1 AUTHOR
