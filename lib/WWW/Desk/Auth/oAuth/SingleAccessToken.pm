@@ -6,7 +6,15 @@ use warnings;
 
 use Moose;
 
+use Net::OAuth 0.20;
+use Data::Random qw(:all);
+use HTTP::Request::Common;
+
+use WWW::Desk::Browser;
+
 extends 'WWW::Desk::Auth::oAuth';
+
+$Net::OAuth::PROTOCOL_VERSION = Net::OAuth::PROTOCOL_VERSION_1_0A;
 
 =head1 NAME
 
@@ -22,25 +30,36 @@ our $VERSION = '0.01';
 
 =head1 ATTRIBUTES
 
-=head2 access_token
+=head2 token
 
 REQUIRED - desk.com access token
 
 =cut
 
-has 'access_token' => (
+has 'token' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1
 );
 
-=head2 access_secret
+=head2 token_secret
 
 REQUIRED - desk.com access secret
 
 =cut
 
-has 'access_secret' => (
+has 'browser_client' => (
+    is         => 'ro',
+    isa        => 'WWW::Desk::Browser',
+    lazy_build => 1,
+);
+
+sub _build_browser_client {
+    my ($self) = @_;
+    return WWW::Desk::Browser->new( base_url => $self->desk_url );
+}
+
+has 'token_secret' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1
@@ -53,21 +72,7 @@ has 'callback_url' => (
 );
 sub _build_callback_url {
     my($self) = @_;
-    return Mojo::URL->new;
-}
-
-has 'oauth_token' => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1
-);
-
-sub _build_oauth_token {
-    my($self) = @_;
-    return $self->request_access_token(
-        $self->access_token,
-        $self->access_secret
-    );
+    return URI->new;
 }
 
 =head2 call
@@ -89,23 +94,46 @@ sub call {
 
     $http_method = lc $http_method;
 
+    my $browser_client = $self->browser_client;
+
     my $request_url = $self->build_api_url($url_fragment);
-    my $oauth_token = $self->oauth_token;
 
-    # Use the access token to fetch a protected resource
-    my $response = $oauth_token->get( $request_url );
+    my $request = Net::OAuth->request('protected resource')->new(
+        consumer_key      => $self->api_key,
+        consumer_secret   => $self->secret_key,
+        request_url       => $request_url,
+        request_method    => uc $http_method,
+        signature_method  => 'HMAC-SHA1',
+        timestamp         => time,
+        nonce             => join('', rand_chars(size=>16, set=>'alphanumeric')),
+        version           => '1.0',
+        token             => $self->token,
+        token_secret      => $self->token_secret,
+    );
 
-    if ( not $response->is_success ) {
-        my $error = $response->status_line;
-        return $self->_prepare_response( 404, $error );
-    }
+    $request->sign;
 
-    return $self->_prepare_response( 200, 'OK', $response->decoded_content );
+    my $json_params = $params ? $browser_client->js_encode($params) : $params;
+    my $http_headers = {};
+    my $response = $browser_client->browser->$http_method(
+        $request->to_url => $http_headers => $json_params
+    );
+
+    my $response_code = $response->res->code;
+    my $response_content = $response->res->body;
+    my $error = $response->error;
+
+    return $self->_prepare_response( $response_code || 408,
+        $error->{'message'} )
+    if $error;
+
+    return $self->_prepare_response( $response_code || 200,
+       'OK', $response_content );
 }
 
 sub _prepare_response {
     my ( $self, $code, $msg, $data ) = @_;
-    $data = $self->browser_client->json->decode($data) if $data;
+    $data = $self->browser_client->js_decode($data) if $data;
     return {
         'code'    => $code,
         'message' => $msg,

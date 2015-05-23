@@ -152,13 +152,13 @@ sub call {
         $error->{'message'} )
       if $error;
 
-    return $self->_prepare_response( $error->{'code'} || 200,
-        $error->{'message'}, $response->res->body );
+    return $self->_prepare_response( 200,
+        'OK', $response->res->body );
 }
 
 sub _prepare_response {
     my ( $self, $code, $msg, $data ) = @_;
-    $data = $self->browser_client->json->decode($data) if $data;
+    $data = $self->browser_client->js_decode($data) if $data;
     return {
         'code'    => $code,
         'message' => $msg,

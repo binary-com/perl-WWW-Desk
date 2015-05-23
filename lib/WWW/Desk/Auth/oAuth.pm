@@ -122,16 +122,16 @@ has 'auth_client' => (
 sub _build_auth_client {
     my ($self) = @_;
     return Net::OAuth::Client->new(
-            $self->api_key,
-            $self->secret_key,
-            protocol_version => '1.0a',
-	    site               => $self->desk_url,
-            authorize_path     => '/oauth/authorize',
-            request_token_path => '/oauth/request_token',
-            access_token_path  => '/oauth/access_token',
-	    callback           => $self->callback_url,
-	    session 	       => \&_session,
-            debug              => $self->debug
+        $self->api_key,
+        $self->secret_key,
+        protocol_version   => '1.0a',
+        site               => $self->desk_url,
+        authorize_path     => '/oauth/authorize',
+        request_token_path => '/oauth/request_token',
+        access_token_path  => '/oauth/access_token',
+        callback           => $self->callback_url,
+        session 	       => \&_session,
+        debug              => $self->debug
     );
 }
 
