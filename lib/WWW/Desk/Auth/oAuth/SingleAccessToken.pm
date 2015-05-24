@@ -24,11 +24,37 @@ WWW::Desk::Auth::oAuth::SingleAccessToken - Desk.com SingleAccessToken Authentic
 
 Version 0.01
 
+=head1 SYNOPSIS
+
+    use WWW::Desk::Auth::oAuth::SingleAccessToken;
+
+    my $desk = WWW::Desk::Auth::oAuth::SingleAccessToken->new(
+        desk_url       => 'https://your.desk.com/',
+        api_key        => 'customer api key',
+        secret_key     => 'customer secret key',
+        token          => 'access token',
+        token_secret   => 'access token secret'
+    );
+
+    my $tx = $desk->call('/customers/search', 'GET', {email => 'a@a.com'});
+
 =cut
 
 our $VERSION = '0.01';
 
 =head1 ATTRIBUTES
+
+=head2 api_key
+
+REQUIRED - desk.com api key
+
+=head2 secret_key
+
+REQUIRED - desk.com api secret key
+
+=head2 desk_url
+
+REQUIRED - your desk url
 
 =head2 token
 
@@ -48,6 +74,12 @@ REQUIRED - desk.com access secret
 
 =cut
 
+has 'token_secret' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1
+);
+
 has 'browser_client' => (
     is         => 'ro',
     isa        => 'WWW::Desk::Browser',
@@ -58,12 +90,6 @@ sub _build_browser_client {
     my ($self) = @_;
     return WWW::Desk::Browser->new( base_url => $self->desk_url );
 }
-
-has 'token_secret' => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1
-);
 
 has 'callback_url' => (
     is         => 'ro',
@@ -77,7 +103,18 @@ sub _build_callback_url {
 
 =head2 call
 
-call 
+call the api requests
+
+REQUIRED $url_fragment, api fragment url
+REQUIRED $http_method, api allowed HTTP method
+OPTIONAL $params parameters to be sent
+
+RETURNS:
+    {
+        'code'    => $code,
+        'message' => $msg,
+        'data'    => $data
+    };
 
 =cut
 
