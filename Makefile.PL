@@ -31,6 +31,8 @@ WriteMakefile(
         'MIME::Base64'       => 0,
         'Mojo::JSON'         => 0,
         'Carp'               => 0,
+	'Data::Random'       => 0,
+	'HTTP::Request::Common' => 0
     },
     (
         !eval { ExtUtils::MakeMaker->VERSION(6.46) }
