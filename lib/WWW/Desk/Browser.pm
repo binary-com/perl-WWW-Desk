@@ -92,6 +92,17 @@ sub js_encode {
     return encode_json($response);
 }
 
+=head2 js_decode
+
+Utility method to decode as JSON format
+
+=cut
+
+sub js_decode {
+  my ( $self, $response ) = @_;
+  return decode_json($response);
+}
+
 =head1 AUTHOR
 
 binary.com, C<< <rakesh at binary.com> >>
