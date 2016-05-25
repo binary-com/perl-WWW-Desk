@@ -8,7 +8,7 @@ use Moose;
 use Mojo::UserAgent;
 use Mojo::URL;
 use Mojo::Path;
-use Mojo::JSON qw(encode_json);
+use Mojo::JSON qw(encode_json decode_json);
 
 =head1 NAME
 
