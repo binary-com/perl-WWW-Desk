@@ -94,7 +94,7 @@ sub js_encode {
 
 =head2 js_decode
 
-Utility method to decode as JSON format
+Utility method to decode from JSON format to perl data structure.
 
 =cut
 
