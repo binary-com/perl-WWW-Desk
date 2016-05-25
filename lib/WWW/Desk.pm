@@ -14,11 +14,11 @@ WWW::Desk - Desk.com perl API
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 =head1 SYNOPSIS
 
@@ -158,7 +158,7 @@ sub call {
 
 sub _prepare_response {
     my ( $self, $code, $msg, $data ) = @_;
-    $data = $self->browser_client->json->decode($data) if $data;
+    $data = $self->browser_client->js_decode($data) if $data;
     return {
         'code'    => $code,
         'message' => $msg,

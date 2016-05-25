@@ -8,7 +8,7 @@ use Moose;
 use Mojo::UserAgent;
 use Mojo::URL;
 use Mojo::Path;
-use Mojo::JSON;
+use Mojo::JSON qw(encode_json decode_json);
 
 =head1 NAME
 
@@ -20,7 +20,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 ATTRIBUTES
 
@@ -53,16 +53,6 @@ has 'browser' => (
         my ($self) = @_;
         my $browser = Mojo::UserAgent->new;
         return $browser;
-    }
-);
-
-has 'json' => (
-    is      => 'ro',
-    isa     => 'Mojo::JSON',
-    lazy    => 1,
-    default => sub {
-        my ($self) = @_;
-        return Mojo::JSON->new();
     }
 );
 
@@ -99,7 +89,18 @@ Utility method to encode as JSON format
 
 sub js_encode {
     my ( $self, $response ) = @_;
-    return $self->json->encode($response);
+    return encode_json($response);
+}
+
+=head2 js_decode
+
+Utility method to decode from JSON format to perl data structure.
+
+=cut
+
+sub js_decode {
+  my ( $self, $response ) = @_;
+  return decode_json($response);
 }
 
 =head1 AUTHOR

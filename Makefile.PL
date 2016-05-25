@@ -28,7 +28,7 @@ WriteMakefile(
         'Mojo::URL'          => 0,
         'Net::OAuth::Simple' => 0,
         'MIME::Base64'       => 0,
-        'Mojo::JSON'         => 0,
+        'Mojolicious'        => 6.62,
         'Carp'               => 0,
     },
     (
