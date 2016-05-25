@@ -13,5 +13,6 @@ before_install:
     - build-perl
     - perl -V
     - cpanm -n Devel::Cover::Report::Coveralls
+    - 'cpanm -n Mojolicious@5.17'
 script:
   perl Makefile.PL && make test && cover -test -report coveralls 
