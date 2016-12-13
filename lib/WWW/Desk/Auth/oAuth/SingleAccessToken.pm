@@ -1,69 +1,80 @@
-package WWW::Desk;
+package WWW::Desk::Auth::oAuth::SingleAccessToken;
 
 use 5.006;
 use strict;
-use warnings FATAL => 'all';
+use warnings;
 
 use Moose;
-use Carp;
+
+use Net::OAuth 0.20;
+use Data::Random qw(:all);
+use HTTP::Request::Common;
+
 use WWW::Desk::Browser;
+
+extends 'WWW::Desk::Auth::oAuth';
+
+$Net::OAuth::PROTOCOL_VERSION = Net::OAuth::PROTOCOL_VERSION_1_0A;
 
 =head1 NAME
 
-WWW::Desk - Desk.com perl API
+WWW::Desk::Auth::oAuth::SingleAccessToken - Desk.com SingleAccessToken Authentication
 
 =head1 VERSION
 
-Version 0.09
-
-=cut
-
-our $VERSION = '0.09';
+Version 0.01
 
 =head1 SYNOPSIS
 
-WWW::Desk will allow you make all API calls using HTTP or oAuth authentication
+    use WWW::Desk::Auth::oAuth::SingleAccessToken;
 
-    use WWW::Desk;
-    use WWW::Desk::Auth::HTTP;
-
-    my $auth = WWW::Desk::Auth::HTTP->new(
-        'username' => 'desk username',
-        'password' => 'desk password'
+    my $desk = WWW::Desk::Auth::oAuth::SingleAccessToken->new(
+        desk_url       => 'https://your.desk.com/',
+        api_key        => 'customer api key',
+        secret_key     => 'customer secret key',
+        token          => 'access token',
+        token_secret   => 'access token secret'
     );
-    my $desk = WWW::Desk->new(
-        'desk_url'       => 'https://your.desk.com/',
-        'authentication' => $auth,
-    );
-    my $response = $desk->call('/cases','GET', {'locale' => 'en_US'} );
 
-
-NOTE: Checkout demo/oAuth_demo.pl for oauth demo application
+    my $tx = $desk->call('/customers/search', 'GET', {email => 'a@a.com'});
 
 =cut
 
-=head1 METHOD
-
-    sub call {
-        my ( $self, $url_fragment, $http_method, $params ) = @_;
-        ...
-    }
-
-    Call method accepts
-        $url_fragment - API fragment url
-        $http_method  - HTTP method, Only supported GET, POST, PATCH, DELETE
-        $params       - Additional Parameters which you want to send as query parameters
-
+our $VERSION = '0.01';
 
 =head1 ATTRIBUTES
+
+=head2 api_key
+
+REQUIRED - desk.com api key
+
+=head2 secret_key
+
+REQUIRED - desk.com api secret key
 
 =head2 desk_url
 
 REQUIRED - your desk url
 
+=head2 token
+
+REQUIRED - desk.com access token
+
 =cut
 
-has 'desk_url' => (
+has 'token' => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1
+);
+
+=head2 token_secret
+
+REQUIRED - desk.com access secret
+
+=cut
+
+has 'token_secret' => (
     is       => 'ro',
     isa      => 'Str',
     required => 1
@@ -80,26 +91,30 @@ sub _build_browser_client {
     return WWW::Desk::Browser->new( base_url => $self->desk_url );
 }
 
-=head2 authentication
-
-REQUIRED - WWW::Desk::Auth::HTTP or WWW::Desk::Auth::oAuth object
-
-=cut
-
-has 'authentication' => (
-    is       => 'ro',
-    isa      => 'Object',
-    required => 1
+has 'callback_url' => (
+    is         => 'ro',
+    isa        => 'URI',
+    lazy_build => 1
 );
-
-=head1 SUBROUTINES/METHODS
+sub _build_callback_url {
+    my($self) = @_;
+    return URI->new;
+}
 
 =head2 call
 
-call method will allow you to make API calls.
-url fragment, http method are required to make call
+call the api requests
 
-you can also pass params next to http method to add additional paramerters to the url
+REQUIRED $url_fragment, api fragment url
+REQUIRED $http_method, api allowed HTTP method
+OPTIONAL $params parameters to be sent
+
+RETURNS:
+    {
+        'code'    => $code,
+        'message' => $msg,
+        'data'    => $data
+    };
 
 =cut
 
@@ -111,49 +126,46 @@ sub call {
     }
 
     return $self->_prepare_response( "400",
-        "Argument must be supplied as HASH" )
-      unless ref $params eq 'HASH';
-
-    return $self->_prepare_response( "400",
         "Invalid HTTP method. Only supported GET, POST, PATCH, DELETE" )
       unless $http_method =~ /^GET$|^POST$|^PATCH$|^DELETE$/i;
 
     $http_method = lc $http_method;
+
     my $browser_client = $self->browser_client;
-    my $request_url    = $browser_client->prepare_url($url_fragment);
 
-    my $response;
+    my $request_url = $self->build_api_url($url_fragment);
 
-    my $authentication = $self->authentication;
-    if ( ref($authentication) eq 'WWW::Desk::Auth::HTTP' ) {
+    my $request = Net::OAuth->request('protected resource')->new(
+        consumer_key      => $self->api_key,
+        consumer_secret   => $self->secret_key,
+        request_url       => $request_url,
+        request_method    => uc $http_method,
+        signature_method  => 'HMAC-SHA1',
+        timestamp         => time,
+        nonce             => join('', rand_chars(size=>16, set=>'alphanumeric')),
+        version           => '1.0',
+        token             => $self->token,
+        token_secret      => $self->token_secret,
+    );
 
-        my $json_params =
-          $params ? $browser_client->js_encode($params) : $params;
-        my $http_headers = $self->authentication->login_headers->to_hash();
-        $response =
-          $browser_client->browser->$http_method(
-            $request_url => $http_headers => $json_params );
-    }
-    elsif ( ref($authentication) eq 'WWW::Desk::Auth::oAuth' ) {
-        return $self->_prepare_response( "501",
-            "Command line doesn't support oAuth Authentication" );
-    }
-    else {
-        return $self->_prepare_response( "501",
-            "Authentication Not Implemented" );
-    }
+    $request->sign;
 
+    my $json_params = $params ? $browser_client->js_encode($params) : $params;
+    my $http_headers = {};
+    my $response = $browser_client->browser->$http_method(
+        $request->to_url => $http_headers => $json_params
+    );
+
+    my $response_code = $response->res->code;
+    my $response_content = $response->res->body;
     my $error = $response->error;
 
-    return $self->_prepare_response( 404, $error )
-	if ref $error ne 'HASH';
-
-    return $self->_prepare_response( $error->{'code'} || 408,
+    return $self->_prepare_response( $response_code || 408,
         $error->{'message'} )
-      if $error;
+    if $error;
 
-    return $self->_prepare_response( 200,
-        'OK', $response->res->body );
+    return $self->_prepare_response( $response_code || 200,
+       'OK', $response_content );
 }
 
 sub _prepare_response {
@@ -175,9 +187,6 @@ binary.com, C<< <rakesh at binary.com> >>
 Please report any bugs or feature requests to C<bug-www-desk at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WWW-Desk>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
-
-
-
 
 =head1 SUPPORT
 
@@ -258,4 +267,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 no Moose;
 __PACKAGE__->meta->make_immutable();
 
-1;    # End of WWW::Desk
+1;    # End of WWW::Desk::Auth::oAuth

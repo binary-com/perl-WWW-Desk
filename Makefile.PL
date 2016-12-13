@@ -13,12 +13,13 @@ WriteMakefile(
     MIN_PERL_VERSION   => 5.006,
     CONFIGURE_REQUIRES => { 'ExtUtils::MakeMaker' => 0, },
     BUILD_REQUIRES     => {
-	    'Test::NoWarnings'   => 0,
+	'Test::NoWarnings'   => 0,
         'Test::More'         => 0,
         'Test::FailWarnings' => 0,
         'Test::Exception'    => 0,
     },
     PREREQ_PM => {
+	'Net::OAuth'         => 0.20,
 	'IO::Socket::SSL'    => 1.84,
         'Moose'              => 0,
         'Mojo::UserAgent'    => 0,
@@ -26,10 +27,12 @@ WriteMakefile(
         'Tie::Hash::LRU'     => 0,
         'Mojo::Path'         => 0,
         'Mojo::URL'          => 0,
-        'Net::OAuth::Simple' => 0,
+        'Net::OAuth::Client' => 0,
         'MIME::Base64'       => 0,
         'Mojolicious'        => 5.17,
         'Carp'               => 0,
+	'Data::Random'       => 0,
+	'HTTP::Request::Common' => 0
     },
     (
         !eval { ExtUtils::MakeMaker->VERSION(6.46) }

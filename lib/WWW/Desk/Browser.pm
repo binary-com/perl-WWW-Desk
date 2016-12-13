@@ -8,7 +8,7 @@ use Moose;
 use Mojo::UserAgent;
 use Mojo::URL;
 use Mojo::Path;
-use Mojo::JSON;
+use Mojo::JSON qw(decode_json encode_json);
 
 =head1 NAME
 
@@ -56,16 +56,6 @@ has 'browser' => (
     }
 );
 
-has 'json' => (
-    is      => 'ro',
-    isa     => 'Mojo::JSON',
-    lazy    => 1,
-    default => sub {
-        my ($self) = @_;
-        return Mojo::JSON->new();
-    }
-);
-
 =head1 SYNOPSIS
 
     use WWW::Desk::Browser;
@@ -99,7 +89,19 @@ Utility method to encode as JSON format
 
 sub js_encode {
     my ( $self, $response ) = @_;
-    return $self->json->encode($response);
+    return encode_json($response);
+}
+
+
+=head2 js_decode
+
+Utility method to decode as JSON format
+
+=cut
+
+sub js_decode {
+    my ( $self, $response ) = @_;
+    return decode_json($response);
 }
 
 =head1 AUTHOR
