@@ -72,8 +72,8 @@ subtest "WWW::Desk::Auth::oAuth::SingleAccessToken method test" => sub {
     is ( $desk->api_version, 'v2', 'API Version');
 
     my $response = $desk->call('/customers/search', 'GET', { email => 'a@a.com'} );
-    is ( $response->{code}, 401, '401 error code');
-    is ( $response->{message}, 'Unauthorized', 'User not authorized');
+    is ( $response->{code}, 403, '403 error code');
+    is ( $response->{message}, 'Forbidden', 'User not authorized');
     is ( $response->{data}, undef, 'No data returned');
 };
 
