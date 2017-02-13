@@ -154,8 +154,9 @@ sub _session{
     # Visit authorization_url, approve it
     $auth->authorization_url;
 
+    my $params; # get params from cgi
     # Use the auth code to fetch the access token
-    my $access_token =  $auth->request_access_token(params->{oauth_token}, params->{oauth_verifier});
+    my $access_token =  $auth->request_access_token($params->{oauth_token}, $params->{oauth_verifier});
 
     # Use the access token to fetch a protected resource
     my $response = $access_token->get( $auth->build_api_url('/customers') );
@@ -167,7 +168,7 @@ NOTE: Checkout demo/oAuth_demo.pl for oauth demo application
 
 =head2 authorization_url
 
-Authorization url the user needs to visit to authorize 
+Authorization url the user needs to visit to authorize
 
 =cut
 
