@@ -14,7 +14,7 @@ WWW::Desk - Desk.com perl API
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -73,7 +73,7 @@ has 'browser_client' => (
 
 sub _build_browser_client {
     my ($self) = @_;
-    return WWW::Desk::Browser->new( base_url => $self->desk_url );
+    return WWW::Desk::Browser->new(base_url => $self->desk_url);
 }
 
 =head2 authentication
@@ -100,19 +100,17 @@ you can also pass params next to http method to add additional paramerters to th
 =cut
 
 sub call {
-    my ( $self, $url_fragment, $http_method, $params ) = @_;
+    my ($self, $url_fragment, $http_method, $params) = @_;
 
-    if ( not defined $params ) {
-        $params = { 't' => time() };
+    if (not defined $params) {
+        $params = {'t' => time()};
     }
 
-    return $self->_prepare_response( "400",
-        "Argument must be supplied as HASH" )
-      unless ref $params eq 'HASH';
+    return $self->_prepare_response("400", "Argument must be supplied as HASH")
+        unless ref $params eq 'HASH';
 
-    return $self->_prepare_response( "400",
-        "Invalid HTTP method. Only supported GET, POST, PATCH, DELETE" )
-      unless $http_method =~ /^GET$|^POST$|^PATCH$|^DELETE$/i;
+    return $self->_prepare_response("400", "Invalid HTTP method. Only supported GET, POST, PATCH, DELETE")
+        unless $http_method =~ /^GET$|^POST$|^PATCH$|^DELETE$/i;
 
     $http_method = lc $http_method;
     my $browser_client = $self->browser_client;
@@ -121,39 +119,30 @@ sub call {
     my $response;
 
     my $authentication = $self->authentication;
-    if ( ref($authentication) eq 'WWW::Desk::Auth::HTTP' ) {
+    if (ref($authentication) eq 'WWW::Desk::Auth::HTTP') {
 
-        my $json_params =
-          $params ? $browser_client->js_encode($params) : $params;
+        my $json_params = $params ? $browser_client->js_encode($params) : $params;
         my $http_headers = $self->authentication->login_headers->to_hash();
-        $response =
-          $browser_client->browser->$http_method(
-            $request_url => $http_headers => $json_params );
-    }
-    elsif ( ref($authentication) eq 'WWW::Desk::Auth::oAuth' ) {
-        return $self->_prepare_response( "501",
-            "Command line doesn't support oAuth Authentication" );
-    }
-    else {
-        return $self->_prepare_response( "501",
-            "Authentication Not Implemented" );
+        $response = $browser_client->browser->$http_method($request_url => $http_headers => $json_params);
+    } elsif (ref($authentication) eq 'WWW::Desk::Auth::oAuth') {
+        return $self->_prepare_response("501", "Command line doesn't support oAuth Authentication");
+    } else {
+        return $self->_prepare_response("501", "Authentication Not Implemented");
     }
 
     my $error = $response->error;
 
-    return $self->_prepare_response( 404, $error )
-	if ref $error ne 'HASH';
+    return $self->_prepare_response(404, $error)
+        if ref $error ne 'HASH';
 
-    return $self->_prepare_response( $error->{'code'} || 408,
-        $error->{'message'} )
-      if $error;
+    return $self->_prepare_response($error->{'code'} || 408, $error->{'message'})
+        if $error;
 
-    return $self->_prepare_response( 200,
-        'OK', $response->res->body );
+    return $self->_prepare_response(200, 'OK', $response->res->body);
 }
 
 sub _prepare_response {
-    my ( $self, $code, $msg, $data ) = @_;
+    my ($self, $code, $msg, $data) = @_;
     $data = $self->browser_client->js_decode($data) if $data;
     return {
         'code'    => $code,
