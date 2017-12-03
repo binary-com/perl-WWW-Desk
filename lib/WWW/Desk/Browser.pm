@@ -8,7 +8,7 @@ use Moose;
 use Mojo::UserAgent;
 use Mojo::URL;
 use Mojo::Path;
-use Mojo::JSON qw(decode_json encode_json);
+use JSON::MaybeXS;
 
 =head1 NAME
 
@@ -85,7 +85,7 @@ Utility method to encode as JSON format
 
 sub js_encode {
     my ( $self, $response ) = @_;
-    return encode_json($response);
+    return Encode::encode_utf8(JSON::MaybeXS->new->encode($response));
 }
 
 
@@ -97,7 +97,7 @@ Utility method to decode as JSON format
 
 sub js_decode {
     my ( $self, $response ) = @_;
-    return decode_json($response);
+    return JSON::MaybeXS->new->decode(Encode::decode_utf8($response));
 }
 
 =head1 AUTHOR
