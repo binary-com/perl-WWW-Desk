@@ -13,6 +13,7 @@ requires 'Net::OAuth', '0.2';
 requires 'Net::OAuth::Client';
 requires 'Tie::Hash::LRU';
 requires 'perl', '5.006';
+requires 'JSON::MaybeXS';
 
 on configure => sub {
     requires 'ExtUtils::MakeMaker';
